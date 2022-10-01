@@ -1,0 +1,7 @@
+CREATE OR REPLACE package HR.contract_calc is
+procedure get_num_of_payments;
+procedure num_of_payments;
+FUNCTION  CALC_INSTAL(INSTAL_REC CONTRACTS%rowtype) 
+RETURN NUMBER;
+end;
+/

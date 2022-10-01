@@ -1,0 +1,81 @@
+CREATE OR REPLACE package body HR.contract_calc
+is
+procedure num_of_payments 
+is
+
+cursor con_cursor is
+select *
+from contracts;
+v_number number (6);
+v_num number (6);
+v_st_date date;
+v_end_date date;
+v_amount number(30,5);
+begin
+ 
+for cont_rec in con_cursor
+
+loop
+v_amount:=round((cont_rec.contract_total_fees-NVL(cont_rec.contract_deposit_fees,0))/cont_rec.payments_installments_no);
+v_st_date:=cont_rec.contract_startdate;
+v_num :=1;
+ insert into installments_paid(INSTALLMENT_ID, CONTRACT_ID, INTALLMENT_DATE, INSTALLMENT_AMOUNT, PAID)
+values(cont_sq.nextval,cont_rec.contract_id,v_st_date,v_amount,0);
+ while v_num<cont_rec.payments_installments_no loop
+ if cont_rec.contract_payment_type ='ANNUAL' then
+v_st_date:=add_months(v_st_date,12);
+elsif cont_rec.contract_payment_type ='QUARTER' then
+v_st_date:=add_months(v_st_date,3);
+elsif cont_rec.contract_payment_type ='HALF_ANNUAL' then
+v_st_date:=add_months(v_st_date,6);
+elsif cont_rec.contract_payment_type ='MONTHLY' then
+v_st_date:=add_months(v_st_date,1);
+end if;
+ insert into installments_paid(INSTALLMENT_ID, CONTRACT_ID, INTALLMENT_DATE, INSTALLMENT_AMOUNT, PAID)
+values(cont_sq.nextval,cont_rec.contract_id,v_st_date,v_amount,0);
+ v_num:=v_num+1;
+ end loop;
+
+
+end loop;
+
+end;
+procedure get_num_of_payments 
+is
+
+cursor con_cursor is
+select *
+from contracts;
+v_number number (6);
+begin
+ 
+for cont_rec in con_cursor
+loop
+v_number:=contract_calc.CALC_INSTAL(CONT_REC);
+dbms_output.put_line(v_number);
+update contracts
+set payments_installments_no = v_number
+where contract_id=cont_rec.contract_id;
+end loop;
+
+end;
+FUNCTION  CALC_INSTAL(INSTAL_REC CONTRACTS%rowtype) 
+RETURN NUMBER
+IS 
+
+v_num_install number(6);
+
+BEGIN
+if INSTAL_REC.contract_payment_type ='ANNUAL' then
+v_num_install:=round(months_between(INSTAL_REC.contract_enddate,INSTAL_REC.contract_startdate)/12);
+elsif INSTAL_REC.contract_payment_type ='QUARTER' then
+v_num_install:=round(months_between(INSTAL_REC.contract_enddate,INSTAL_REC.contract_startdate)/3);
+elsif INSTAL_REC.contract_payment_type ='HALF_ANNUAL' then
+v_num_install:=round(months_between(INSTAL_REC.contract_enddate,INSTAL_REC.contract_startdate)/6);
+elsif INSTAL_REC.contract_payment_type ='MONTHLY' then
+v_num_install:=months_between(INSTAL_REC.contract_enddate,INSTAL_REC.contract_startdate);
+end if;
+RETURN v_num_install ;
+END;
+end;
+/

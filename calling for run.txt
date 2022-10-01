@@ -1,0 +1,5 @@
+DECLARE
+BEGIN
+ contract_calc.get_num_of_payments();
+ contract_calc.num_of_payments();
+ END;
